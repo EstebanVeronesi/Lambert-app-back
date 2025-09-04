@@ -29,29 +29,29 @@ app.get('/', (req, res) => {
 })
 
 app.post('/login', async (req, res) => {
-  const { username, password } = req.body
+  const { email, password } = req.body
 
   try {
-    const user = await UserRepository.login({ username, password })
-    const token = jwt.sign({ id: user.id, username: user.username}, SECRET_JWT_KEY, {expiresIn: '1h'})
+    const user = await UserRepository.login({ email, password })
+    const token = jwt.sign({ dni: user.dni, email: user.email}, SECRET_JWT_KEY, {expiresIn: '1h'})
     res
     .cookie('access_token', token, {
       httpOnly: true, //la cookie solo se puede acceder desde el servidor
       secure: process.env.NODE_ENV === 'production',  //solo se envia por https
       sameSite: 'strict', //la cookie solo se envia si la peticion viene del mismo sitio
       maxAge: 1000 * 60 * 60}) //1 hora
-      .json({ user }) // enviamos solo el usuario, Angular puede usarlo para UI
+      .json({ email }) // enviamos solo el usuario, Angular puede usarlo para UI
   } catch (error) {
     res.status(401).json({ error: error.message || 'Login failed' })
   }
 })
 
 app.post('/register', async (req, res) => {
-  const { username, password } = req.body
+  const { dni, nombre, email, password } = req.body
 
   try {
-    const id = await UserRepository.create({ username, password })
-    res.status(201).json({ id }) // 201: Created
+    const user = await UserRepository.create({ dni, nombre, email, password })
+    res.status(201).json({ user }) // 201: Created
   } catch (error) {
     res.status(400).json({ error: error.message || 'Registration failed' })
   }
