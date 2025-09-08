@@ -3,12 +3,14 @@ import { PORT, SECRET_JWT_KEY } from './config.ts'
 import { UserRepository } from './user-repository.ts'
 import jwt from 'jsonwebtoken'
 import cookieParser from 'cookie-parser'
+import cors from 'cors';
 import { json } from 'stream/consumers'
 
 const app = express()
 
 app.use(express.json()) // Middleware para parsear JSON
 app.use(cookieParser()) // Middleware para parsear cookies
+app.use(cors()); // permite peticiones desde cualquier origen
 
 // Middleware para verificar el token en cada peticion
 app.use((req, res, next) => {
