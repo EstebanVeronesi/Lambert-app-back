@@ -1,3 +1,7 @@
+declare const process: {
+  env: { [key: string]: string | undefined };
+};
+
 export const {
   PORT = 3000,
   SALT_ROUNDS = 10,

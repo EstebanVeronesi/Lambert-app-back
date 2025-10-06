@@ -1,77 +1,103 @@
-import express from 'express'
-import { PORT, SECRET_JWT_KEY } from './config.ts'
-import { UserRepository } from './user-repository.ts'
-import jwt from 'jsonwebtoken'
-import cookieParser from 'cookie-parser'
+import express from 'express';
+import { PORT, SECRET_JWT_KEY } from './config';
+import { UserRepository } from './user-repository';
+import jwt from 'jsonwebtoken';
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import { json } from 'stream/consumers'
 
-const app = express()
 
-app.use(express.json()) // Middleware para parsear JSON
-app.use(cookieParser()) // Middleware para parsear cookies
-app.use(cors()); // permite peticiones desde cualquier origen
+const app = express();
 
-// Middleware para verificar el token en cada peticion
-app.use((req, res, next) => {
-  const token = req.cookies.access_token //recuperamos la cookie
-  req.session = { user: null }
+declare const process: {
+  env: { [key: string]: string | undefined };
+};
+
+app.use(express.json());
+app.use(cookieParser());
+
+// Configurar CORS si el frontend está en otro origen
+app.use(cors({
+  origin: 'http://localhost:4200', // Cambiar al origen de tu frontend
+  credentials: true
+}));
+
+// Middleware para verificar JWT
+function authenticateToken(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const token = req.cookies?.access_token;
+  if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
 
   try {
-    const data = jwt.verify(token, SECRET_JWT_KEY) //verificamos el token
-    req.session.user = data //si el token es valido guardamos los datos del usuario en la sesion
-  } catch {}
+    const decoded = jwt.verify(token, SECRET_JWT_KEY);
+    (req as any).user = decoded;
+    next();
+  } catch {
+    return res.status(403).json({ error: 'Invalid token.' });
+  }
+}
 
-  next() //continuamos con la siguiente ruta o middleware
-})
+// Ruta de prueba
+app.get('/', authenticateToken, (req, res) => {
+  const user = (req as any).user;
+  res.json({ valid: true, user });
+});
 
-app.get('/', (req, res) => {
-  const { user } = req.session
-  res.json({ valid: true, user: user }) //si el token es valido devolvemos datos del usuario
-})
-
+// Login
 app.post('/login', async (req, res) => {
-  const { email, password } = req.body
+  const { email, password } = req.body;
 
   try {
-    const user = await UserRepository.login({ email, password })
-    const token = jwt.sign({ dni: user.dni, email: user.email}, SECRET_JWT_KEY, {expiresIn: '1h'})
+    const user = await UserRepository.login({ email, password });
+
+    const token = jwt.sign(
+      { dni: user.dni, email: user.email },
+      SECRET_JWT_KEY,
+      { expiresIn: '1h' }
+    );
+
     res
-    .cookie('access_token', token, {
-      httpOnly: true, //la cookie solo se puede acceder desde el servidor
-      secure: process.env.NODE_ENV === 'production',  //solo se envia por https
-      sameSite: 'strict', //la cookie solo se envia si la peticion viene del mismo sitio
-      maxAge: 1000 * 60 * 60}) //1 hora
-      .json({ email }) // enviamos solo el usuario, Angular puede usarlo para UI
-  } catch (error) {
-    res.status(401).json({ error: error.message || 'Login failed' })
-  }
-})
+      .cookie('access_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 1000 * 60 * 60,
+      })
+      .json({ email: user.email });
 
+  } catch (error: any) {
+    res.status(401).json({ error: error.message || 'Login failed' });
+  }
+});
+
+// Register
 app.post('/register', async (req, res) => {
-  const { dni, nombre, email, password } = req.body
+  const { dni, nombre, email, password } = req.body;
 
   try {
-    const user = await UserRepository.create({ dni, nombre, email, password })
-    res.status(201).json({ user }) // 201: Created
-  } catch (error) {
-    res.status(400).json({ error: error.message || 'Registration failed' })
+    const user = await UserRepository.create({ dni, nombre, email, password });
+    res.status(201).json({ user });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message || 'Registration failed' });
   }
-})
+});
 
+// Logout
 app.post('/logout', (req, res) => {
   res
-  .clearCookie('access_token') //borramos la cookie
-  .status(200)
-  .json({ message: 'Logged out' })
-})
+    .clearCookie('access_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    })
+    .status(200)
+    .json({ message: 'Logged out' });
+});
 
-app.get('/protected', (req, res) => {
-  const { user } = req.session
-  if (!user) return res.status(401).json({ error: 'Access denied. No token provided.' })
-  res.json({ message: 'Protected resource', user: user }) // devolvemos JSON
-})
+// Endpoint protegido
+app.get('/protected', authenticateToken, (req, res) => {
+  const user = (req as any).user;
+  res.json({ message: 'Protected resource', user });
+});
 
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`)
-})
+  console.log(`Server running at http://localhost:${PORT}`);
+});

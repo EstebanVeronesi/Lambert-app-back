@@ -1,72 +1,102 @@
-import DBLocal from 'db-local'
-import crypto from 'crypto'
-import bcrypt from 'bcrypt'
+import { pool } from './db'; // Tu cliente PostgreSQL
+import bcrypt from 'bcrypt';
+import { SALT_ROUNDS } from './config';
 
-import { SALT_ROUNDS } from './config.ts'
+// Definimos tipos para los parámetros de los métodos
+interface UserInput {
+  dni: string;
+  nombre: string;
+  email: string;
+  password: string;
+}
 
-const { Schema } = new DBLocal({ path: './db' })
+interface LoginInput {
+  email: string;
+  password: string;
+}
 
-const User = Schema('User', {
-  nombre: { type: String, required: true },
-  dni: { type: String, required: true },
-  email: { type: String, required: true },
-  password: { type: String, required: true }
-})
+interface UserOutput {
+  dni: string;
+  nombre: string;
+  email: string;
+}
 
 export class UserRepository {
-  static async create ({ dni, nombre, email, password }) {
-    // Validar username y password
-    Validation.nombre(nombre)
-    Validation.dni(dni)
-    Validation.email(email)
-    Validation.password(password)
+  // Crear usuario (registro)
+  static async create({ dni, nombre, email, password }: UserInput): Promise<{ email: string }> {
+    // Validaciones
+    Validation.nombre(nombre);
+    Validation.dni(dni);
+    Validation.email(email);
+    Validation.password(password);
 
-    // Verificar si el email ya existe
-    const user = await User.findOne({ email })
-    if (user) {
-      throw new Error('Email already exists')
+    // Verificar si el usuario ya existe (por email o dni)
+    const existing = await pool.query(
+      'SELECT 1 FROM users WHERE email = $1 OR dni = $2',
+      [email, dni]
+    );
+
+    if (existing.rows.length > 0) {
+      throw new Error('Email or DNI already exists');
     }
 
-    // 2. Hashear password
-    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS)
+    // Hashear la contraseña
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-    User.create({ dni, nombre, email, password: hashedPassword }).save()
-    return { email }
+    // Insertar usuario en PostgreSQL
+    await pool.query(
+      `INSERT INTO users (dni, nombre, email, password_hash)
+       VALUES ($1, $2, $3, $4)`,
+      [dni, nombre, email, hashedPassword]
+    );
+
+    return { email };
   }
 
-  static async login ({ email, password }) {
-    Validation.email(email)
-    Validation.password(password)
+  // Login de usuario
+  static async login({ email, password }: LoginInput): Promise<UserOutput> {
+    // Validaciones
+    Validation.email(email);
+    Validation.password(password);
 
-    const user = await User.findOne({ email })
-    if (!user) throw new Error('Invalid email or password')
+    // Buscar usuario por email
+    const result = await pool.query(
+      'SELECT dni, nombre, email, password_hash FROM users WHERE email = $1',
+      [email]
+    );
 
-    const isValid = await bcrypt.compare(password, user.password)
-    if (!isValid) throw new Error('Invalid username or password')
+    if (result.rows.length === 0) throw new Error('Invalid email or password');
+
+    const user = result.rows[0];
+
+    // Comparar contraseña con bcrypt
+    const isValid = await bcrypt.compare(password, user.password_hash);
+    if (!isValid) throw new Error('Invalid email or password');
 
     return {
       dni: user.dni,
       nombre: user.nombre,
       email: user.email
-    }
+    };
   }
 }
 
+// Validaciones de datos
 class Validation {
-  static dni(dni) {
-    if (typeof dni !== 'string' || dni.trim().length < 7) throw new Error('Invalid DNI')
+  static dni(dni: string) {
+    if (typeof dni !== 'string' || dni.trim().length < 7) throw new Error('Invalid DNI');
   }
 
-  static nombre(nombre) {
-    if (typeof nombre !== 'string' || nombre.trim().length < 2) throw new Error('Invalid name')
+  static nombre(nombre: string) {
+    if (typeof nombre !== 'string' || nombre.trim().length < 2) throw new Error('Invalid name');
   }
 
-  static email(email) {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!regex.test(email)) throw new Error('Invalid email')
+  static email(email: string) {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!regex.test(email)) throw new Error('Invalid email');
   }
 
-  static password(password) {
-    if (typeof password !== 'string' || password.length < 6) throw new Error('Invalid password')
+  static password(password: string) {
+    if (typeof password !== 'string' || password.length < 6) throw new Error('Invalid password');
   }
 }
