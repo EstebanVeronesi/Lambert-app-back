@@ -1,12 +1,12 @@
 // src/types/proyecto.types.ts
 
+// ... (las interfaces CargaExtra y DatosFormularioProyecto no cambian) ...
 export interface CargaExtra {
   descripcion: string;
   peso: number; // en kg
   distancia_eje_delantero: number; // en mm
 }
 
-// Datos que el usuario enviará a la API
 export interface DatosFormularioProyecto {
   cliente: {
     cuit: number;
@@ -19,7 +19,7 @@ export interface DatosFormularioProyecto {
     marca_camion: string;
     modelo_camion: string;
     ano_camion: string;
-    tipo_camion: '4x2' | '6x2' | 'otro'; // <-- El campo que faltaba
+    tipo_camion: '4x2' | '6x2' | 'otro'; 
   };
   configuracion: {
     distancia_entre_ejes: number;
@@ -35,13 +35,14 @@ export interface DatosFormularioProyecto {
     largo_carroceria: number;
     alto_carroceria: number;
     ancho_carroceria: number;
-    separacion_cabina_carroceria: number; // <-- El campo que faltaba
+    separacion_cabina_carroceria: number;
     equipo_frio_marca_modelo?: string;
   };
-  cargas_extra?: CargaExtra[]; // <-- El campo que faltaba
+  cargas_extra?: CargaExtra[];
 }
 
-// Estructura de los resultados (sin cambios)
+
+// Estructura de los resultados (MODIFICADA)
 export interface ResultadosCalculo {
   resultado_peso_bruto_total_maximo: number;
   resultado_carga_eje_delantero_calculada: number;
@@ -54,9 +55,16 @@ export interface ResultadosCalculo {
   verificacion_voladizo_trasero_ok: boolean;
   verificacion_largo_total_equipo_ok?: boolean;
   recomendaciones: string[];
+  
+  /**
+   * NUEVO: Lista de campos (en formato "objeto.propiedad") 
+   * que están implicados en el fallo de una verificación.
+   * Ej: ["carroceria.largo_carroceria", "configuracion.distancia_entre_ejes"]
+   */
+  camposConError: string[]; 
 }
 
-// Representa el objeto completo que se enviará para guardar.
+// ... (la interfaz ProyectoCompletoParaGuardar no cambia) ...
 export interface ProyectoCompletoParaGuardar {
   datosEntrada: DatosFormularioProyecto;
   resultados: ResultadosCalculo;
