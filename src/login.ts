@@ -3,22 +3,11 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { UserRepository } from '../user-repository'; // Asegúrate que la ruta al archivo sea correcta
 import { SECRET_JWT_KEY } from '../config';      // Asegúrate que la ruta al archivo sea correcta
+import authenticateToken from './middleware/auth';
+
 
 const router = express.Router();
 
-// Middleware para verificar JWT (ahora pertenece a este router)
-function authenticateToken(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const token = req.cookies?.access_token;
-  if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
-
-  try {
-    const decoded = jwt.verify(token, SECRET_JWT_KEY);
-    (req as any).user = decoded;
-    next();
-  } catch {
-    return res.status(403).json({ error: 'Invalid token.' });
-  }
-}
 
 // Login
 router.post('/login', async (req, res) => {

@@ -5,6 +5,7 @@ import cors from 'cors';
 import { PORT } from './config'; // Asegúrate que la ruta al archivo sea correcta
 import loginRoutes from './src/login'; // Importamos nuestro nuevo archivo de rutas
 import proyectosRoutes from './src/routes/proyectos.routes';
+import camionRoutes from './src/routes/camion.routes';
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(cookieParser());
 // He agregado el prefijo '/api' por buena práctica.
 app.use('/api', loginRoutes);
 app.use('/api/proyectos', proyectosRoutes);
+app.use('/api/camiones', camionRoutes);
 
 // Iniciar el servidor
 app.listen(PORT, () => {

@@ -1,7 +1,9 @@
-// src/controllers/proyectos.controller.ts
+// src/controllers/proyecto.controller.ts
 import { Request, Response } from 'express';
 import { ProyectoService } from '../services/proyecto.service';
 import { DatosFormularioProyecto, ProyectoCompletoParaGuardar } from '../types/proyecto.types';
+
+// ¡Este archivo NO debe importar 'CamionRepository'!
 
 const proyectoService = new ProyectoService();
 
@@ -24,3 +26,5 @@ export const guardarProyecto = async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// --- La función 'getConfiguracionPorCamionId' NO va en este archivo ---

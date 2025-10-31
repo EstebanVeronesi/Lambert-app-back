@@ -8,6 +8,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["*.ts"],
-  "exclude": ["dist"]
+  "include": [
+    "*.ts",
+    "src/**/*.ts"
+  ],
+  "exclude": ["dist", "node_modules"]
 }

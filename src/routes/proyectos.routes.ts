@@ -1,7 +1,7 @@
 // src/routes/proyectos.routes.ts
 import { Router } from 'express';
 import { simularCalculo, guardarProyecto } from '../controllers/proyecto.controller';
-import  authenticateToken from '../login';
+import authenticateToken from '../middleware/auth'; // Importa el middleware de autenticación
 
 const router = Router();
 
