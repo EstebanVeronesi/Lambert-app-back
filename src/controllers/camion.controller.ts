@@ -13,6 +13,19 @@ export const getCamionesVerificados = async (req: Request, res: Response) => {
   }
 };
 
+// Controlador para POST /api/camiones
+export const crearCamion = async (req: Request, res: Response) => {
+  try {
+    const datosCamion = req.body;
+    // Aquí podrías validar que vengan todos los campos necesarios
+    
+    const resultado = await CamionRepository.create(datosCamion);
+    res.status(201).json(resultado);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // Controlador para GET /api/camiones/configuracion/:id
 export const getConfiguracionPorCamionId = async (req: Request, res: Response) => {
   try {
