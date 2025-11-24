@@ -5,7 +5,7 @@
 -- Dumped from database version 17.0
 -- Dumped by pg_dump version 17.0
 
--- Started on 2025-11-23 23:18:07
+-- Started on 2025-11-23 23:23:56
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -415,14 +415,14 @@ ALTER TABLE public.cliente OWNER TO postgres;
 
 CREATE TABLE public.configuracion_modificada (
     id integer NOT NULL,
-    fk_proyecto_modificado_id integer,
     distancia_entre_ejes numeric,
     distancia_primer_eje_espalda_cabina numeric,
     voladizo_delantero numeric,
     voladizo_trasero numeric,
     peso_eje_delantero numeric,
     peso_eje_trasero numeric,
-    pbt numeric
+    pbt numeric,
+    fk_id_camion_modificado integer
 );
 
 
@@ -980,21 +980,21 @@ ALTER TABLE ONLY public.carroceria_modificada
 
 
 --
--- TOC entry 4882 (class 2606 OID 76733)
--- Name: configuracion_modificada configuracion_modificada_fk_proyecto_modificado_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.configuracion_modificada
-    ADD CONSTRAINT configuracion_modificada_fk_proyecto_modificado_id_fkey FOREIGN KEY (fk_proyecto_modificado_id) REFERENCES public.proyecto_modificado(id) ON DELETE CASCADE;
-
-
---
 -- TOC entry 4876 (class 2606 OID 76768)
 -- Name: camion_configuracion fk_config_camion; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.camion_configuracion
     ADD CONSTRAINT fk_config_camion FOREIGN KEY (fk_id_camion) REFERENCES public.camion(id);
+
+
+--
+-- TOC entry 4882 (class 2606 OID 76773)
+-- Name: configuracion_modificada fk_config_modificada_camion; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.configuracion_modificada
+    ADD CONSTRAINT fk_config_modificada_camion FOREIGN KEY (fk_id_camion_modificado) REFERENCES public.camion_modificado(id);
 
 
 --
@@ -1024,7 +1024,7 @@ ALTER TABLE ONLY public.pedido
     ADD CONSTRAINT pedido_fk_id_vendedor_fkey FOREIGN KEY (fk_id_vendedor) REFERENCES public.vendedor(id) ON DELETE RESTRICT;
 
 
--- Completed on 2025-11-23 23:18:07
+-- Completed on 2025-11-23 23:23:56
 
 --
 -- PostgreSQL database dump complete
