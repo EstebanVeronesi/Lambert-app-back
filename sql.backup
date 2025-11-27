@@ -5,7 +5,7 @@
 -- Dumped from database version 17.0
 -- Dumped by pg_dump version 17.0
 
--- Started on 2025-11-23 23:23:56
+-- Started on 2025-11-27 18:12:59
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -208,7 +208,9 @@ CREATE TABLE public.camion_configuracion (
     pbt numeric NOT NULL,
     original boolean DEFAULT true,
     es_modificado boolean DEFAULT false,
-    fk_id_camion integer
+    fk_id_camion integer,
+    ancho_chasis_1 integer NOT NULL,
+    ancho_chasis_2 integer
 );
 
 
@@ -320,7 +322,7 @@ CREATE TABLE public.carroceria (
     ancho_carroceria numeric NOT NULL,
     equipo_frio_marca_modelo character varying(255),
     observaciones text,
-    separacion_cabina_carroceria integer
+    separacion_cabina_carroceria integer NOT NULL
 );
 
 
@@ -422,7 +424,9 @@ CREATE TABLE public.configuracion_modificada (
     peso_eje_delantero numeric,
     peso_eje_trasero numeric,
     pbt numeric,
-    fk_id_camion_modificado integer
+    fk_id_camion_modificado integer,
+    ancho_chasis_1 integer NOT NULL,
+    ancho_chasis_2 integer
 );
 
 
@@ -1024,7 +1028,7 @@ ALTER TABLE ONLY public.pedido
     ADD CONSTRAINT pedido_fk_id_vendedor_fkey FOREIGN KEY (fk_id_vendedor) REFERENCES public.vendedor(id) ON DELETE RESTRICT;
 
 
--- Completed on 2025-11-23 23:23:56
+-- Completed on 2025-11-27 18:12:59
 
 --
 -- PostgreSQL database dump complete

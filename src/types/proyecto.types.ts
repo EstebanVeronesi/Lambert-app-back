@@ -1,10 +1,8 @@
-// src/types/proyecto.types.ts
-
-// Carga adicional (grúa, equipo de frío, etc.)
+// Carga adicional
 export interface CargaExtra {
   descripcion: string;
-  peso: number; // en kg
-  distancia_eje_delantero: number; // en mm
+  peso: number;                    // kg
+  distancia_eje_delantero: number; // mm
 }
 
 // Datos que el usuario enviará a la API
@@ -15,56 +13,55 @@ export interface DatosFormularioProyecto {
   };
   vendedor: {
     id: number;
+    nombre: string;
   };
   camion: {
-    // Para Opción 1, el frontend puede enviar el ID.
-    // Para Opción 2, debe enviar marca/modelo/año.
-    id?: number; 
-    marca_camion?: string;
-    modelo_camion?: string;
-    ano_camion?: string;
-    tipo_camion: '4x2' | '6x2' | 'otro'; 
+    id?: number | null;
+    marca_camion: string;
+    modelo_camion: string;
+    ano_camion: string;
+    tipo_camion: '4x2' | '6x2'
   };
   configuracion: {
-    // --- ¡ESTE ES EL CAMPO CLAVE! ---
-    es_modificado: boolean; // true = Opción 2 (Pendiente), false = Opción 1 (Verificado)
-    // --- FIN ---
-
-    distancia_entre_ejes: number;
-    distancia_primer_eje_espalda_cabina: number;
-    voladizo_delantero: number;
-    voladizo_trasero: number;
-    peso_eje_delantero: number;
-    peso_eje_trasero: number;
-    pbt: number;
+    distancia_entre_ejes: number;             // mm
+    distancia_primer_eje_espalda_cabina: number; // mm
+    voladizo_delantero: number;               // mm
+    voladizo_trasero: number;                 // mm
+    peso_eje_delantero: number;               // kg
+    peso_eje_trasero: number;                 // kg
+    ancho_chasis_1: number;                   // mm
+    ancho_chasis_2?: number | null;                  // mm
+    pbt: number;                              // kg
+    original?: boolean;                       // flag en BD
+    es_modificado?: boolean;                  // flag en BD
   };
   carroceria: {
     tipo_carroceria: 'Metálica' | 'Térmica';
-    largo_carroceria: number;
-    alto_carroceria: number;
-    ancho_carroceria: number;
-    separacion_cabina_carroceria: number;
-    equipo_frio_marca_modelo?: string;
+    largo_carroceria: number;                 // mm
+    alto_carroceria: number;                  // mm
+    ancho_carroceria: number;                 // mm
+    separacion_cabina_carroceria: number;     // mm
+    equipo_frio_marca_modelo?: string;        // si aplica
   };
-  cargas_extra?: CargaExtra[];
+  cargas_extra?: CargaExtra[];                // accesorios opcionales
 }
 
-// Resultados completos generados por el cálculo técnico
+// Resultados completos
 export interface ResultadosCalculo {
-  resultado_peso_bruto_total_maximo: number;
-  resultado_carga_maxima_eje_delantero: number;    // (a)
-  resultado_carga_maxima_eje_trasero: number;      // (b)
-  resultado_carga_total_calculada: number;         // (e)
-  resultado_carga_eje_delantero_calculada: number; // (c)
-  resultado_carga_eje_trasero_calculada: number;   // (d)
-  resultado_porcentaje_carga_eje_delantero: number;
-  resultado_modificacion_chasis: string;           // (h)
-  resultado_voladizo_trasero_calculado: number;
-  resultado_largo_final_camion: number;
-  resultado_centro_carga_total: number;             // (f)
-  resultado_centro_carga_carroceria: number;        // (g)
-  resultado_nueva_distancia_entre_ejes: number;     // (i)
-  resultado_desplazamiento_eje: number;             // (j)
+  // Resultados principales
+  resultado_peso_bruto_total_maximo: number;       // kg
+  resultado_carga_eje_delantero_calculada: number; // kg
+  resultado_carga_eje_trasero_calculada: number;   // kg
+  resultado_porcentaje_carga_eje_delantero: number; // %
+  resultado_modificacion_chasis: string;
+  resultado_voladizo_trasero_calculado: number;     // mm
+  resultado_largo_final_camion: number;            // mm
+  resultado_centro_carga_total: number;             // mm
+  resultado_centro_carga_carroceria: number;        // mm
+  resultado_nueva_distancia_entre_ejes: number;     // mm
+  resultado_desplazamiento_eje: number;             // mm
+
+  // Verificaciones y recomendaciones
   verificacion_distribucion_carga_ok: boolean;
   verificacion_voladizo_trasero_ok: boolean;
   verificacion_largo_total_equipo_ok?: boolean;
