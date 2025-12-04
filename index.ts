@@ -6,6 +6,7 @@ import { PORT } from './config'; // Asegúrate que la ruta al archivo sea correc
 import loginRoutes from './src/login'; // Importamos nuestro nuevo archivo de rutas
 import proyectosRoutes from './src/routes/proyectos.routes';
 import camionRoutes from './src/routes/camion.routes';
+import adminRoutes from './src/routes/admin.routes';
 
 const app = express();
 
@@ -22,6 +23,8 @@ app.use(cookieParser());
 app.use('/api', loginRoutes);
 app.use('/api/proyectos', proyectosRoutes);
 app.use('/api/camiones', camionRoutes);
+app.use('/api/admin', adminRoutes);
+
 
 // Iniciar el servidor
 app.listen(PORT, () => {

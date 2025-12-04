@@ -181,7 +181,7 @@ export class ProyectoService {
   public async guardarProyectoCompleto(proyecto: ProyectoCompletoParaGuardar) {
     console.log("[SERVICE] Guardando proyecto...");
     const repo = new ProyectoRepository();
-    return await repo.create(proyecto);
+    return await ProyectoRepository.create(proyecto);
   }
 
   // ==========================================================================

@@ -1,3 +1,5 @@
+// src/app/core/models/project.types.ts
+
 // Carga adicional
 export interface CargaExtra {
   descripcion: string;
@@ -30,7 +32,7 @@ export interface DatosFormularioProyecto {
     peso_eje_delantero: number;               // kg
     peso_eje_trasero: number;                 // kg
     ancho_chasis_1: number;                   // mm
-    ancho_chasis_2?: number | null;                  // mm
+    ancho_chasis_2?: number | null;           // mm
     pbt: number;                              // kg
     original?: boolean;                       // flag en BD
     es_modificado?: boolean;                  // flag en BD
@@ -66,10 +68,18 @@ export interface ResultadosCalculo {
   verificacion_voladizo_trasero_ok: boolean;
   verificacion_largo_total_equipo_ok?: boolean;
   recomendaciones: string[];
+  
+  // Agrego opcionalmente los campos de error para compatibilidad con el frontend existente
+  camposConError?: string[];
 }
 
 // Objeto completo que se guarda o envía al backend
 export interface ProyectoCompletoParaGuardar {
   datosEntrada: DatosFormularioProyecto;
+  resultados: ResultadosCalculo;
+}
+
+// Interfaz para la respuesta de simulación (Usada por el ProjectService)
+export interface RespuestaSimulacion {
   resultados: ResultadosCalculo;
 }
