@@ -426,6 +426,96 @@ export class ProyectoRepository {
   }
 
 
+// ==========================================================================
+  // BUSCAR POR VENDEDOR (Seguridad: Cada uno ve solo lo suyo)
+  // ==========================================================================
+  static async findByVendedor(dniVendedor: number) {
+    try {
+      // --- QUERY 1: ORIGINALES FILTRADOS ---
+      // Agregamos: WHERE p.fk_id_vendedor = $1
+      const queryOriginales = `
+        SELECT 
+          p.id, 
+          c.razon_social as cliente, 
+          cam.marca_camion || ' ' || cam.modelo_camion as camion,
+          p.estado, 
+          p.fecha_entrega,
+          false as es_modificado,
+          
+          json_build_object(
+            'distancia_entre_ejes', cc.distancia_entre_ejes,
+            'distancia_primer_eje_espalda_cabina', cc.distancia_primer_eje_espalda_cabina,
+            'voladizo_delantero', cc.voladizo_delantero,
+            'voladizo_trasero', cc.voladizo_trasero,
+            'peso_eje_delantero', cc.peso_eje_delantero,
+            'peso_eje_trasero', cc.peso_eje_trasero,
+            'pbt', cc.pbt,
+            'ancho_chasis_1', cc.ancho_chasis_1,
+            'ancho_chasis_2', cc.ancho_chasis_2
+          ) as configuracion,
+
+          json_build_object(
+            'resultado_peso_bruto_total_maximo', calc.resultado_peso_bruto_total_maximo,
+            'resultado_modificacion_chasis', calc.resultado_modificacion_chasis,
+            'resultado_largo_final_camion', calc.resultado_largo_final_camion,
+            'recomendaciones', calc.recomendaciones
+          ) as calculos
+
+        FROM pedido p
+        JOIN cliente c ON p.fk_cuit_cliente = c.cuit
+        JOIN camion cam ON p.fk_id_camion = cam.id
+        LEFT JOIN camion_configuracion cc ON cc.fk_id_camion = cam.id
+        LEFT JOIN calculos calc ON calc.fk_id_pedido = p.id
+        WHERE p.fk_id_vendedor = $1  -- <--- FILTRO POR VENDEDOR
+      `;
+
+      // --- QUERY 2: MODIFICADOS FILTRADOS ---
+      // Agregamos: WHERE pm.fk_id_vendedor = $1
+      const queryModificados = `
+        SELECT 
+          pm.id, 
+          pm.cliente_razon_social as cliente, 
+          cm.marca_camion || ' ' || cm.modelo_camion as camion, 
+          pm.estado_proyecto as estado, 
+          pm.fecha_entrega,
+          true as es_modificado,
+          
+          json_build_object(
+            'distancia_entre_ejes', conf_m.distancia_entre_ejes,
+            'distancia_primer_eje_espalda_cabina', conf_m.distancia_primer_eje_espalda_cabina,
+            'voladizo_delantero', conf_m.voladizo_delantero,
+            'voladizo_trasero', conf_m.voladizo_trasero,
+            'peso_eje_delantero', conf_m.peso_eje_delantero,
+            'peso_eje_trasero', conf_m.peso_eje_trasero,
+            'pbt', conf_m.pbt,
+            'ancho_chasis_1', conf_m.ancho_chasis_1,
+            'ancho_chasis_2', conf_m.ancho_chasis_2
+          ) as configuracion,
+
+          json_build_object(
+            'resultado_peso_bruto_total_maximo', calc_m.resultado_peso_bruto_total_maximo,
+            'resultado_modificacion_chasis', calc_m.resultado_modificacion_chasis,
+            'resultado_largo_final_camion', calc_m.resultado_largo_final_camion,
+            'recomendaciones', calc_m.recomendaciones
+          ) as calculos
+
+        FROM proyecto_modificado pm
+        LEFT JOIN camion_modificado cm ON cm.fk_proyecto_modificado_id = pm.id
+        LEFT JOIN configuracion_modificada conf_m ON conf_m.fk_id_camion_modificado = cm.id
+        LEFT JOIN calculos_modificado calc_m ON calc_m.fk_proyecto_modificado_id = pm.id
+        WHERE pm.fk_id_vendedor = $1 -- <--- FILTRO POR VENDEDOR
+      `;
+
+      const finalQuery = `${queryOriginales} UNION ALL ${queryModificados} ORDER BY id DESC`;
+      
+      const result = await pool.query(finalQuery, [dniVendedor]);
+      return result.rows;
+    } catch (error) {
+      console.error('Error al listar pedidos del vendedor:', error);
+      throw new Error('Error al obtener tus pedidos.');
+    }
+  }
+
   /**
    * ==========================================================================
    * 5. CREAR VERIFICADO
@@ -555,3 +645,4 @@ export class ProyectoRepository {
     }
   }
 }
+

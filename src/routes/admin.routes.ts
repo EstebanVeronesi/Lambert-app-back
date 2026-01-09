@@ -1,19 +1,20 @@
 import { Router } from 'express';
-import authenticateToken from '../login'; // O tu middleware de auth
-// Importar los controladores nuevos
+// 1. CORREGIMOS LA RUTA DE IMPORTACIÓN (Asegúrate que la ruta sea correcta según tu estructura)
+import authenticateToken from '../middleware/auth'; 
+
 import { listarPedidos, actualizarPedido, obtenerPedido } from '../controllers/pedido.controller';
 
 const router = Router();
 
 // ... otras rutas de admin ...
 
-// GET /api/admin/pedidos -> Trae TODOS los pedidos
+// GET /api/admin/pedidos
 router.get('/pedidos', authenticateToken, listarPedidos);
 
-// GET /api/admin/pedidos/:id -> Trae UNO (requiere ?es_modificado=...)
+// GET /api/admin/pedidos/:id
 router.get('/pedidos/:id', authenticateToken, obtenerPedido);
 
-// PUT /api/admin/pedidos/:id -> Actualiza estado, fecha o cálculos
+// PUT /api/admin/pedidos/:id
 router.put('/pedidos/:id', authenticateToken, actualizarPedido);
 
 export default router;
