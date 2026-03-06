@@ -1,7 +1,7 @@
 // src/login.ts
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { UserRepository } from '../user-repository'; // Asegúrate que la ruta al archivo sea correcta
+import { UserRepository } from './repositories/user.repository'; // Asegúrate que la ruta al archivo sea correcta
 import { SECRET_JWT_KEY } from '../config';      // Asegúrate que la ruta al archivo sea correcta
 import authenticateToken from './middleware/auth';
 
@@ -35,6 +35,8 @@ router.post('/login', async (req, res) => {
         maxAge: 1000 * 60 * 60,
       })
       .json({ 
+        dni: user.dni,
+        nombre: user.nombre,
         email: user.email, 
         rol: user.rol, 
         id: user.id  // El frontend recibe el DNI en este campo 'id'

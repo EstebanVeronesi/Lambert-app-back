@@ -1,5 +1,3 @@
-// src/app/core/models/project.types.ts
-
 // Carga adicional
 export interface CargaExtra {
   descripcion: string;
@@ -13,8 +11,8 @@ export interface DatosFormularioProyecto {
     cuit: number;
     razon_social: string;
   };
-  vendedor: {
-    id: number;
+  usuario: {
+    dni: string;
     nombre: string;
   };
   camion: {
@@ -32,10 +30,8 @@ export interface DatosFormularioProyecto {
     peso_eje_delantero: number;               // kg
     peso_eje_trasero: number;                 // kg
     ancho_chasis_1: number;                   // mm
-    ancho_chasis_2?: number | null;           // mm
+    ancho_chasis_2?: number | null;                  // mm
     pbt: number;                              // kg
-    original?: boolean;                       // flag en BD
-    es_modificado?: boolean;                  // flag en BD
   };
   carroceria: {
     tipo_carroceria: 'Metálica' | 'Térmica';
@@ -62,24 +58,46 @@ export interface ResultadosCalculo {
   resultado_centro_carga_carroceria: number;        // mm
   resultado_nueva_distancia_entre_ejes: number;     // mm
   resultado_desplazamiento_eje: number;             // mm
+  resultado_carga_maxima_eje_delantero: number;
+  resultado_carga_maxima_eje_trasero: number;
+  resultado_carga_total_calculada: number;
 
   // Verificaciones y recomendaciones
   verificacion_distribucion_carga_ok: boolean;
   verificacion_voladizo_trasero_ok: boolean;
-  verificacion_largo_total_equipo_ok?: boolean;
   recomendaciones: string[];
-  
-  // Agrego opcionalmente los campos de error para compatibilidad con el frontend existente
-  camposConError?: string[];
 }
 
 // Objeto completo que se guarda o envía al backend
 export interface ProyectoCompletoParaGuardar {
+  es_modificado?: boolean;
   datosEntrada: DatosFormularioProyecto;
   resultados: ResultadosCalculo;
 }
 
-// Interfaz para la respuesta de simulación (Usada por el ProjectService)
-export interface RespuestaSimulacion {
-  resultados: ResultadosCalculo;
+export interface UserInput {
+  dni: string;
+  nombre: string;
+  email: string;
+  password: string;
+  rol?: string;
 }
+
+export interface LoginInput {
+  email: string;
+  password: string;
+}
+
+export interface UserOutput {
+  id: number;       
+  dni: number;
+  nombre: string;
+  email: string;
+  rol: string;      
+}
+
+export interface Cliente {
+  cuit: number;
+  razon_social: string;
+}
+

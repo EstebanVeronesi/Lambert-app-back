@@ -1,31 +1,11 @@
-import { pool } from './db'; // Tu cliente PostgreSQL
+import { pool } from '../../db'; // Tu cliente PostgreSQL
 import bcrypt from 'bcrypt';
-import { SALT_ROUNDS } from './config';
+import { UserInput, LoginInput, UserOutput } from '../types/proyecto.types';
 
-// Definimos tipos para los parámetros de los métodos
-interface UserInput {
-  dni: string;
-  nombre: string;
-  email: string;
-  password: string;
-}
-
-interface LoginInput {
-  email: string;
-  password: string;
-}
-
-export interface UserOutput {
-  id: number;       // El sistema espera un "id", le daremos el DNI
-  dni: number;
-  nombre: string;
-  email: string;
-  rol: string;      
-}
 
 export class UserRepository {
   
-  static async login({ email, password }: { email: string, password: string }): Promise<UserOutput> {
+  static async login({ email, password }: LoginInput ): Promise<UserOutput> {
     
     // 1. Buscamos por email. Pedimos dni, rol y password_hash
     const result = await pool.query(
@@ -53,7 +33,7 @@ export class UserRepository {
     };
   }
 
-  static async create({ dni, nombre, email, password, rol }: any): Promise<number> {
+  static async create({ dni, nombre, email, password, rol }: UserInput): Promise<number> {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // Insertamos usando password_hash y devolvemos el dni como id

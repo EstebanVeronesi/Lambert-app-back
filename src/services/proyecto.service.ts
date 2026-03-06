@@ -169,6 +169,9 @@ export class ProyectoService {
       resultado_centro_carga_carroceria: centroCargaCarroceria,
       resultado_nueva_distancia_entre_ejes: nuevaDistanciaEntreEjes,
       resultado_desplazamiento_eje: desplazamientoEje,
+      resultado_carga_maxima_eje_delantero: cargaMaxEjeDelantero,
+      resultado_carga_maxima_eje_trasero: cargaMaxEjeTrasero,
+      resultado_carga_total_calculada: cargaTotal,
       verificacion_distribucion_carga_ok: verificacionDistribucion.ok,
       verificacion_voladizo_trasero_ok: verificacionVoladizo.ok,
       recomendaciones,
@@ -179,8 +182,7 @@ export class ProyectoService {
   // GUARDAR PROYECTO COMPLETO
   // ==========================================================================
   public async guardarProyectoCompleto(proyecto: ProyectoCompletoParaGuardar) {
-    console.log("[SERVICE] Guardando proyecto...");
-    const repo = new ProyectoRepository();
+    console.log("[SERVICE] Guardando proyecto...", proyecto);
     return await ProyectoRepository.create(proyecto);
   }
 

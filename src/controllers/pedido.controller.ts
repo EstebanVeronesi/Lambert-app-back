@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { ProyectoRepository } from '../repositories/proyecto.repository';
 
-// Listar Pedidos (Inteligente: Admin ve todo, Vendedor ve lo suyo)
+// Listar Pedidos (Inteligente: Admin ve todo, usuario ve lo suyo)
 export const listarPedidos = async (req: Request, res: Response) => {
   try {
     // 1. Obtenemos el usuario del token (req as any para evitar error de TS)
@@ -13,17 +13,17 @@ export const listarPedidos = async (req: Request, res: Response) => {
     let pedidos;
 
     // 2. Verificamos Rol
-    if (usuario.rol === 'admin' || usuario.rol === 'ingeniero') {
+    if (usuario.rol === 'admin' || usuario.rol === 'ofi_tec') {
       // Si es Jefe/Ingeniero, ve TODO
       pedidos = await ProyectoRepository.findAll();
     } else {
-      // Si es Vendedor, filtramos usando su DNI (que está en usuario.id)
-      if (!usuario.id) {
+      // Si es usuario, filtramos usando su DNI (que está en usuario.id)
+      if (!usuario.dni) {
          return res.status(400).json({ error: "Token inválido: falta identificación de usuario." });
       }
       
-      console.log(`Filtrando pedidos para el vendedor DNI: ${usuario.id}`);
-      pedidos = await ProyectoRepository.findByVendedor(usuario.id);
+      console.log(`Filtrando pedidos para el usuario DNI: ${usuario.id}`);
+      pedidos = await ProyectoRepository.findByUsuario(usuario.dni);
     }
 
     res.json(pedidos);

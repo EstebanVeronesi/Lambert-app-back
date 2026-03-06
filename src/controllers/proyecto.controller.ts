@@ -19,10 +19,12 @@ export const simularCalculo = async (req: Request, res: Response) => {
 
 export const guardarProyecto = async (req: Request, res: Response) => {
   try {
+    console.log('Body recibido en guardarProyecto:', JSON.stringify(req.body, null, 2));
     const proyectoCompleto: ProyectoCompletoParaGuardar = req.body;
     const resultadoGuardado = await proyectoService.guardarProyectoCompleto(proyectoCompleto);
     res.status(201).json(resultadoGuardado);
   } catch (error: any) {
+    console.error('Error al guardar proyecto:', error);
     res.status(500).json({ error: error.message });
   }
 };

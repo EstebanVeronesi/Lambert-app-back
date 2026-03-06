@@ -5,7 +5,7 @@ export const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'lambert',
-  password: '159753',
+  password: 'fransql',
   port: 5432, // puerto por defecto de PostgreSQL
 });
 

@@ -6,7 +6,7 @@ export class ProyectoRepository {
   // ==========================================================================
   // 1. LISTAR TODOS (ADMIN)
   // ==========================================================================
-  static async findAll() {
+  /*static async findAll() {
     try {
       // --- QUERY 1: PEDIDOS ORIGINALES ---
       const queryOriginales = `
@@ -98,6 +98,46 @@ export class ProyectoRepository {
       throw new Error('Error al listar los pedidos');
     }
   }
+*/
+static async findAll() {
+  try {
+    const queryOriginales = `
+      SELECT 
+        p.id, 
+        c.razon_social AS cliente_razon_social, 
+        cam.marca_camion || ' ' || cam.modelo_camion || ' ' || cam.ano_camion AS camion,
+        p.estado AS estado, 
+        p.fecha_entrega,
+        p.fecha_pedido as fecha_creacion,
+        false AS es_modificado
+      FROM pedido p
+      JOIN cliente c ON p.fk_cuit_cliente = c.cuit
+      JOIN camion cam ON p.fk_id_camion = cam.id
+    `;
+
+    const queryModificados = `
+      SELECT 
+        pm.id, 
+        COALESCE(pm.cliente_razon_social, c.razon_social) AS cliente_razon_social, 
+        cm.marca_camion || ' ' || cm.modelo_camion AS camion, 
+        pm.estado_proyecto AS estado, 
+        pm.fecha_entrega,
+        pm.created_at as fecha_creacion,
+        true AS es_modificado
+      FROM proyecto_modificado pm
+      LEFT JOIN cliente c ON pm.fk_cuit_cliente = c.cuit
+      LEFT JOIN camion_modificado cm ON cm.fk_proyecto_modificado_id = pm.id
+    `;
+
+    const finalQuery = `${queryOriginales} UNION ALL ${queryModificados} ORDER BY fecha_creacion DESC, id DESC`;
+    const result = await pool.query(finalQuery);
+    return result.rows;
+  } catch (error) {
+    console.error('Error al obtener pedidos:', error);
+    throw new Error('Error al listar los pedidos');
+  }
+}
+
 
  // ==========================================================================
   // 2. BUSCAR POR ID (MEJORADO PARA SIMULACIÓN)
@@ -111,13 +151,14 @@ export class ProyectoRepository {
         query = `
           SELECT 
             p.id, 
-            c.razon_social, c.cuit, -- Datos Cliente
+            c.razon_social as cliente_razon_social, c.cuit,
             p.estado, p.fecha_entrega, false as es_modificado,
             
             -- Datos Camión (Raw para el formulario)
             json_build_object(
                 'id', cam.id, 'marca_camion', cam.marca_camion, 
-                'modelo_camion', cam.modelo_camion, 'tipo_camion', cam.tipo_camion
+                'modelo_camion', cam.modelo_camion, 'tipo_camion', cam.tipo_camion,
+                'ano_camion', cam.ano_camion
             ) as camion,
 
             -- Configuración
@@ -138,8 +179,24 @@ export class ProyectoRepository {
                 'equipo_frio_marca_modelo', carr.equipo_frio_marca_modelo
             ) as carroceria,
 
-            -- Cálculos Actuales
-            row_to_json(calc.*) as calculos
+            -- Cálculos Actuales (planos)
+            calc.resultado_peso_bruto_total_maximo,
+            calc.resultado_carga_eje_delantero_calculada,
+            calc.resultado_carga_eje_trasero_calculada,
+            calc.resultado_porcentaje_carga_eje_delantero,
+            calc.resultado_modificacion_chasis,
+            calc.resultado_voladizo_trasero_calculado,
+            calc.resultado_largo_final_camion,
+            calc.verificacion_distribucion_carga_ok,
+            calc.verificacion_voladizo_trasero_ok,
+            calc.recomendaciones,
+            calc.resultado_desplazamiento_eje,
+            calc.resultado_nueva_distancia_entre_ejes,
+            calc.resultado_centro_carga_carroceria,
+            calc.resultado_centro_carga_total,
+            calc.resultado_carga_maxima_eje_delantero,
+            calc.resultado_carga_maxima_eje_trasero,
+            calc.resultado_carga_total_calculada
 
           FROM pedido p
           JOIN cliente c ON p.fk_cuit_cliente = c.cuit
@@ -154,7 +211,7 @@ export class ProyectoRepository {
         query = `
           SELECT 
             pm.id, 
-            pm.cliente_razon_social, pm.fk_cuit_cliente as cuit,
+            pm.cliente_razon_social as cliente_razon_social, pm.fk_cuit_cliente as cuit,
             pm.estado_proyecto as estado, pm.fecha_entrega, true as es_modificado,
             
             json_build_object(
@@ -178,7 +235,24 @@ export class ProyectoRepository {
                 'equipo_frio_marca_modelo', carr_m.equipo_frio_marca_modelo
             ) as carroceria,
 
-            row_to_json(calc_m.*) as calculos
+            calc_m.resultado_peso_bruto_total_maximo,
+            calc_m.resultado_carga_eje_delantero_calculada,
+            calc_m.resultado_carga_eje_trasero_calculada,
+            calc_m.resultado_porcentaje_carga_eje_delantero,
+            calc_m.resultado_modificacion_chasis,
+            calc_m.resultado_voladizo_trasero_calculado,
+            calc_m.resultado_largo_final_camion,
+            calc_m.verificacion_distribucion_carga_ok,
+            calc_m.verificacion_voladizo_trasero_ok,
+            calc_m.recomendaciones,
+            calc_m.resultado_desplazamiento_eje,
+            calc_m.resultado_nueva_distancia_entre_ejes,
+            calc_m.resultado_centro_carga_carroceria,
+            calc_m.resultado_centro_carga_total,
+            calc_m.resultado_carga_maxima_eje_delantero,
+            calc_m.resultado_carga_maxima_eje_trasero,
+            calc_m.resultado_carga_total_calculada
+
 
           FROM proyecto_modificado pm
           LEFT JOIN camion_modificado cm ON cm.fk_proyecto_modificado_id = pm.id
@@ -306,10 +380,8 @@ export class ProyectoRepository {
   // 3. CREAR PROYECTO (Punto de Entrada)
   // ==========================================================================
   static async create(proyecto: ProyectoCompletoParaGuardar): Promise<any> {
-    const { datosEntrada } = proyecto;
-
-    // Usamos (configuracion as any) por si TypeScript se queja de que 'es_modificado' no existe en el type
-    if ((datosEntrada.configuracion as any).es_modificado) {
+    console.log('Proyecto: recibido en Create', proyecto)
+    if (proyecto.es_modificado) {
       return this.createModificado(proyecto);
     } else {
       return this.createVerificado(proyecto);
@@ -321,21 +393,21 @@ export class ProyectoRepository {
   // ==========================================================================
   private static async createModificado(proyecto: ProyectoCompletoParaGuardar): Promise<any> {
     const { datosEntrada, resultados } = proyecto;
-    const { cliente, vendedor, camion, configuracion, carroceria } = datosEntrada;
+    const { cliente, usuario, camion, configuracion, carroceria } = datosEntrada;
 
     // Casteamos a any si faltan propiedades en el type estricto pero existen en el objeto
     const configAny = configuracion as any; 
-
     const client = await pool.connect();
+
     try {
       await client.query('BEGIN');
 
       // 1. Proyecto Modificado
       const proyectoQuery = `
-        INSERT INTO proyecto_modificado (fk_id_vendedor, fk_cuit_cliente, cliente_razon_social, estado_proyecto, created_at)
+        INSERT INTO proyecto_modificado (fk_id_usuario, fk_cuit_cliente, cliente_razon_social, estado_proyecto, created_at)
         VALUES ($1, $2, $3, 'Pendiente', NOW()) RETURNING id;
       `;
-      const proyectoRes = await client.query(proyectoQuery, [vendedor.id, cliente.cuit, cliente.razon_social]);
+      const proyectoRes = await client.query(proyectoQuery, [usuario.dni, cliente.cuit, cliente.razon_social]);
       const proyectoModificadoId = proyectoRes.rows[0].id;
 
       // 2. Camión Modificado
@@ -391,11 +463,18 @@ export class ProyectoRepository {
           resultado_porcentaje_carga_eje_delantero, 
           resultado_modificacion_chasis, 
           resultado_voladizo_trasero_calculado, 
-          resultado_largo_final_camion, 
+          resultado_largo_final_camion,
+          resultado_centro_carga_total,
+          resultado_centro_carga_carroceria,
+          resultado_nueva_distancia_entre_ejes,
+          resultado_desplazamiento_eje,
           verificacion_distribucion_carga_ok, 
           verificacion_voladizo_trasero_ok, 
           recomendaciones
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+          resultado_carga_maxima_eje_delantero,
+          resultado_carga_maxima_eje_trasero,
+          resultado_carga_total_calculada
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
         RETURNING id;
       `;
       
@@ -407,10 +486,17 @@ export class ProyectoRepository {
         resultados.resultado_porcentaje_carga_eje_delantero, 
         resultados.resultado_modificacion_chasis, 
         resultados.resultado_voladizo_trasero_calculado, 
-        resultados.resultado_largo_final_camion, 
+        resultados.resultado_largo_final_camion,
+        resultados.resultado_centro_carga_total,
+        resultados.resultado_centro_carga_carroceria,
+        resultados.resultado_nueva_distancia_entre_ejes,
+        resultados.resultado_desplazamiento_eje, 
         resultados.verificacion_distribucion_carga_ok, 
         resultados.verificacion_voladizo_trasero_ok, 
-        resultados.recomendaciones
+        resultados.recomendaciones,
+        resultados.resultado_carga_maxima_eje_delantero,
+        resultados.resultado_carga_maxima_eje_trasero,
+        resultados.resultado_carga_total_calculada
       ]);
 
       await client.query('COMMIT');
@@ -427,18 +513,16 @@ export class ProyectoRepository {
 
 
 // ==========================================================================
-  // BUSCAR POR VENDEDOR (Seguridad: Cada uno ve solo lo suyo)
+  // BUSCAR POR usuario (Seguridad: Cada uno ve solo lo suyo)
   // ==========================================================================
-  static async findByVendedor(dniVendedor: number) {
+/*  static async findByUsuario(dniUsuario: string) {
     try {
-      // --- QUERY 1: ORIGINALES FILTRADOS ---
-      // Agregamos: WHERE p.fk_id_vendedor = $1
       const queryOriginales = `
         SELECT 
           p.id, 
           c.razon_social as cliente, 
           cam.marca_camion || ' ' || cam.modelo_camion as camion,
-          p.estado, 
+          p.estado as estado, 
           p.fecha_entrega,
           false as es_modificado,
           
@@ -466,11 +550,11 @@ export class ProyectoRepository {
         JOIN camion cam ON p.fk_id_camion = cam.id
         LEFT JOIN camion_configuracion cc ON cc.fk_id_camion = cam.id
         LEFT JOIN calculos calc ON calc.fk_id_pedido = p.id
-        WHERE p.fk_id_vendedor = $1  -- <--- FILTRO POR VENDEDOR
+        WHERE p.fk_id_usuario = $1  -- <--- FILTRO POR usuario
       `;
 
       // --- QUERY 2: MODIFICADOS FILTRADOS ---
-      // Agregamos: WHERE pm.fk_id_vendedor = $1
+      // Agregamos: WHERE pm.fk_id_usuario = $1
       const queryModificados = `
         SELECT 
           pm.id, 
@@ -503,18 +587,58 @@ export class ProyectoRepository {
         LEFT JOIN camion_modificado cm ON cm.fk_proyecto_modificado_id = pm.id
         LEFT JOIN configuracion_modificada conf_m ON conf_m.fk_id_camion_modificado = cm.id
         LEFT JOIN calculos_modificado calc_m ON calc_m.fk_proyecto_modificado_id = pm.id
-        WHERE pm.fk_id_vendedor = $1 -- <--- FILTRO POR VENDEDOR
+        WHERE pm.fk_id_usuario = $1 -- <--- FILTRO POR usuario
       `;
 
       const finalQuery = `${queryOriginales} UNION ALL ${queryModificados} ORDER BY id DESC`;
-      
-      const result = await pool.query(finalQuery, [dniVendedor]);
+      const result = await pool.query(finalQuery, [dniUsuario]);
+      console.log('Pedidos devueltos por la query:', result.rows);
       return result.rows;
     } catch (error) {
-      console.error('Error al listar pedidos del vendedor:', error);
+      console.error('Error al listar pedidos del usuario:', error);
       throw new Error('Error al obtener tus pedidos.');
     }
   }
+*/
+static async findByUsuario(dniUsuario: string) {
+  try {
+    const queryOriginales = `
+      SELECT 
+        p.id, 
+        c.razon_social AS cliente, 
+        cam.marca_camion || ' ' || cam.modelo_camion AS camion,
+        p.estado AS estado, 
+        p.fecha_pedido as fecha,
+        false AS es_modificado
+      FROM pedido p
+      JOIN cliente c ON p.fk_cuit_cliente = c.cuit
+      JOIN camion cam ON p.fk_id_camion = cam.id
+      WHERE p.fk_id_usuario = $1
+    `;
+
+    const queryModificados = `
+      SELECT 
+        pm.id, 
+        COALESCE(pm.cliente_razon_social, c.razon_social) AS cliente, 
+        cm.marca_camion || ' ' || cm.modelo_camion AS camion, 
+        pm.estado_proyecto AS estado, 
+        pm.created_at as fecha,
+        true AS es_modificado
+      FROM proyecto_modificado pm
+      LEFT JOIN cliente c ON pm.fk_cuit_cliente = c.cuit
+      LEFT JOIN camion_modificado cm ON cm.fk_proyecto_modificado_id = pm.id
+      WHERE pm.fk_id_usuario = $1
+    `;
+
+    const finalQuery = `${queryOriginales} UNION ALL ${queryModificados} ORDER BY fecha DESC, id DESC`;
+    const result = await pool.query(finalQuery, [dniUsuario]);
+    return result.rows;
+  } catch (error) {
+    console.error('Error al listar pedidos del usuario:', error);
+    throw new Error('Error al obtener tus pedidos.');
+  }
+}
+
 
   /**
    * ==========================================================================
@@ -523,7 +647,7 @@ export class ProyectoRepository {
    */
   private static async createVerificado(proyecto: ProyectoCompletoParaGuardar): Promise<any> {
     const { datosEntrada, resultados } = proyecto;
-    const { cliente, vendedor, camion, configuracion, carroceria } = datosEntrada;
+    const { cliente, usuario, camion, configuracion, carroceria } = datosEntrada;
 
     // Casteamos a any para acceder a propiedades que quizás no están en el type estricto
     const configAny = configuracion as any;
@@ -533,25 +657,18 @@ export class ProyectoRepository {
     try {
       await client.query('BEGIN');
 
-      // 1. Cliente
-      const clienteQuery = `
-        INSERT INTO cliente (cuit, razon_social) VALUES ($1, $2)
-        ON CONFLICT (cuit) DO UPDATE SET razon_social = $2;
-      `;
-      await client.query(clienteQuery, [cliente.cuit, cliente.razon_social]);
+      // 1. Cliente ya debe existir, no se crea ni se actualiza acá, solo se referencia
 
-      // 2. Camión
+      // 2. Camión. Recordemos que por BD, el estado es 'pendiente' por omisión. 
       if (camion.id) {
         camionId = camion.id;
       } else if (camion.marca_camion && camion.modelo_camion) {
-        const upsertCamionQuery = `
+        const insertCamionQuery = `
           INSERT INTO camion (marca_camion, modelo_camion, ano_camion, tipo_camion)
           VALUES ($1, $2, $3, $4)
-          ON CONFLICT (marca_camion, modelo_camion, ano_camion) 
-          DO UPDATE SET marca_camion = EXCLUDED.marca_camion
           RETURNING id;
         `;
-        const camionRes = await client.query(upsertCamionQuery, [
+        const camionRes = await client.query(insertCamionQuery, [
           camion.marca_camion, camion.modelo_camion, camion.ano_camion, camion.tipo_camion
         ]);
         camionId = camionRes.rows[0].id;
@@ -582,10 +699,10 @@ export class ProyectoRepository {
 
       // 4. Pedido
       const pedidoQuery = `
-        INSERT INTO pedido (fk_id_camion, fk_cuit_cliente, fk_id_vendedor, estado, fecha_pedido)
+        INSERT INTO pedido (fk_id_camion, fk_cuit_cliente, fk_id_usuario, estado, fecha_pedido)
         VALUES ($1, $2, $3, 'Pendiente', NOW()) RETURNING id;
       `;
-      const pedidoRes = await client.query(pedidoQuery, [camionId, cliente.cuit, vendedor.id]);
+      const pedidoRes = await client.query(pedidoQuery, [camionId, cliente.cuit, usuario.dni]);
       const pedidoId = pedidoRes.rows[0].id;
 
       // 5. Carrocería
@@ -614,9 +731,16 @@ export class ProyectoRepository {
           resultado_largo_final_camion, 
           verificacion_distribucion_carga_ok, 
           verificacion_voladizo_trasero_ok, 
-          recomendaciones
+          recomendaciones,
+          resultado_desplazamiento_eje,
+          resultado_nueva_distancia_entre_ejes,
+          resultado_centro_carga_carroceria,
+          resultado_centro_carga_total,
+          resultado_carga_maxima_eje_delantero,
+          resultado_carga_maxima_eje_trasero,
+          resultado_carga_total_calculada
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) 
         RETURNING id;
       `;
       const calculosRes = await client.query(calculosQuery, [
@@ -630,7 +754,14 @@ export class ProyectoRepository {
         resultados.resultado_largo_final_camion, 
         resultados.verificacion_distribucion_carga_ok, 
         resultados.verificacion_voladizo_trasero_ok, 
-        resultados.recomendaciones
+        resultados.recomendaciones,
+        resultados.resultado_desplazamiento_eje,
+        resultados.resultado_nueva_distancia_entre_ejes,
+        resultados.resultado_centro_carga_carroceria,
+        resultados.resultado_centro_carga_total,
+        resultados.resultado_carga_maxima_eje_delantero,
+        resultados.resultado_carga_maxima_eje_trasero,
+        resultados.resultado_carga_total_calculada
       ]);
 
       await client.query('COMMIT');

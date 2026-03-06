@@ -16,15 +16,39 @@ export const getCamionesVerificados = async (req: Request, res: Response) => {
 // Controlador para POST /api/camiones
 export const crearCamion = async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user;
+    if (!user || user.rol !== 'admin') {
+      return res.status(403).json({ error: 'Solo un Admin puede crear camiones verificados.' });
+    }
+
     const datosCamion = req.body;
     // Aquí podrías validar que vengan todos los campos necesarios
-    
     const resultado = await CamionRepository.create(datosCamion);
     res.status(201).json(resultado);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 };
+
+// Controlador para GET /api/camiones/:id
+export const getCamionById = async (req: Request, res: Response) => {
+  try {
+    const camionId = parseInt(req.params.id, 10);
+    if (isNaN(camionId)) {
+      return res.status(400).json({ error: 'ID de camión inválido.' });
+    }
+
+    const camion = await CamionRepository.findById(camionId);
+    if (!camion) {
+      return res.status(404).json({ error: 'Camión no encontrado.' });
+    }
+
+    res.status(200).json(camion);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 
 // Controlador para GET /api/camiones/configuracion/:id
 export const getConfiguracionPorCamionId = async (req: Request, res: Response) => {

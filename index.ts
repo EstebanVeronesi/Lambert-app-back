@@ -7,6 +7,8 @@ import loginRoutes from './src/login'; // Importamos nuestro nuevo archivo de ru
 import proyectosRoutes from './src/routes/proyectos.routes';
 import camionRoutes from './src/routes/camion.routes';
 import adminRoutes from './src/routes/admin.routes';
+import userRoutes from './src/routes/user.routes';
+import clienteRoutes from './src/routes/cliente.routes';
 
 const app = express();
 
@@ -24,6 +26,8 @@ app.use('/api', loginRoutes);
 app.use('/api/proyectos', proyectosRoutes);
 app.use('/api/camiones', camionRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/usuarios', userRoutes);
+app.use('/api/clientes', clienteRoutes);
 
 
 // Iniciar el servidor
